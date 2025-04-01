@@ -2,8 +2,9 @@
 
 AlgoViz is an interactive web application designed to help users understand and visualize common algorithms and data structures. Through step-by-step animations and explanations, users can gain insights into how different algorithms work and compare their performance.
 
-![AlgoViz Screenshot](public/screenshot.png)
-
+![AlgoViz Screenshot](public/home.png)
+![AlgoViz Screenshot searching algorithm](public/searching.png)
+![AlgoViz Screenshot sorting algorithm](public/sorting.png)
 ## Features
 
 - **Interactive Visualizations** - Step through algorithms at your own pace
