@@ -2514,85 +2514,83 @@ function minDistance(word1, word2) {
       algorithmData={algorithmInfo[algorithm]}
       controls={
         <>
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Algorithm</InputLabel>
-            <Select
-              value={algorithm}
-              label="Algorithm"
-              onChange={(e) => {
-                setAlgorithm(e.target.value);
-                resetVisualization();
-              }}
-              disabled={isRunning}
-            >
-              {getAvailableAlgorithms().map((algo) => (
-                <MenuItem key={algo} value={algo}>
-                  {algorithmInfo[algo].name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Algorithm</InputLabel>
+                <Select
+                  value={algorithm}
+                  onChange={(e) => {
+                    setAlgorithm(e.target.value);
+                    resetVisualization();
+                  }}
+                  label="Algorithm"
+                  disabled={isRunning}
+                >
+                  {getAvailableAlgorithms().map((algo) => (
+                    <MenuItem key={algo} value={algo}>
+                      {algo}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
 
-          <Box sx={{ mb: 2 }}>
-            <Typography gutterBottom>Problem Size</Typography>
-            <Slider
-              value={problemSize}
-              min={5}
-              max={20}
-              onChange={(_, value) => setProblemSize(value)}
-              disabled={isRunning}
-            />
-          </Box>
+            <Grid item xs={12}>
+              <Typography gutterBottom>Problem Size</Typography>
+              <Slider
+                value={problemSize}
+                onChange={(e, value) => setProblemSize(value)}
+                min={5}
+                max={20}
+                step={1}
+                disabled={isRunning}
+              />
+              <Typography variant="caption" color="text.secondary">
+                {problemSize} elements
+              </Typography>
+            </Grid>
 
-          <Box sx={{ mb: 2 }}>
-            <Typography gutterBottom>Speed</Typography>
-            <Slider
-              value={speed}
-              min={10}
-              max={100}
-              onChange={(_, value) => setSpeed(value)}
-              disabled={isRunning}
-            />
-          </Box>
+            <Grid item xs={12}>
+              <Typography gutterBottom>Speed</Typography>
+              <Slider
+                value={speed}
+                onChange={(e, value) => setSpeed(value)}
+                min={10}
+                max={100}
+                step={10}
+                disabled={isRunning}
+              />
+              <Typography variant="caption" color="text.secondary">
+                {speed}ms per step
+              </Typography>
+            </Grid>
 
-          <VisualizerControls 
-            onRun={runAlgorithm}
-            onPauseResume={() => {
-              if (isPaused) {
-                setIsPaused(false);
-                animateAlgorithm(currentStep, algorithmHistory);
-              } else {
-                setIsPaused(true);
-                if (animationRef.current) {
-                  clearTimeout(animationRef.current);
-                  animationRef.current = null;
-                }
-              }
-            }}
-            onStep={() => {
-              if (currentStep < totalSteps - 1) {
-                if (animationRef.current) {
-                  clearTimeout(animationRef.current);
-                  animationRef.current = null;
-                }
-                setIsPaused(true);
-                const nextStep = currentStep + 1;
-                const historyItem = algorithmHistory[nextStep];
-                if (historyItem) {
-                  setCurrentStep(nextStep);
-                  setExplanation(historyItem.explanation || '');
-                  setHighlightedLines(historyItem.highlightedLines || []);
-                  updateVisualization(historyItem);
-                }
-              }
-            }}
-            onReset={resetVisualization}
-            isRunning={isRunning}
-            isPaused={isPaused}
-            currentStep={currentStep}
-            totalSteps={totalSteps}
-            disabled={isRunning && !isPaused}
-          />
+            <Grid item xs={12}>
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={generateRandomProblem}
+                disabled={isRunning}
+              >
+                Generate Problem
+              </Button>
+            </Grid>
+
+            <Grid item xs={12}>
+              <VisualizerControls
+                isRunning={isRunning}
+                isPaused={isPaused}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                onRun={runAlgorithm}
+                onPauseResume={pauseResumeVisualization}
+                onNext={stepForward}
+                onReset={resetVisualization}
+              />
+            </Grid>
+          </Grid>
         </>
       }
       visualization={

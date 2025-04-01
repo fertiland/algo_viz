@@ -31,40 +31,52 @@ const VisualizerControls = ({
   const progress = totalSteps > 0 ? (currentStep / (totalSteps - 1)) * 100 : 0;
 
   return (
-    <Box>
-      {/* Control Buttons */}
-      <Box sx={{ display: 'flex', gap: 1, mb: 2, justifyContent: 'center' }}>
-        <Tooltip title="Previous Step">
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      gap: 2,
+      p: 2,
+      bgcolor: 'background.paper',
+      borderRadius: 1,
+      boxShadow: 1
+    }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        gap: 2,
+        alignItems: 'center'
+      }}>
+        <Tooltip title="Run Algorithm">
           <span>
-            <IconButton 
-              onClick={onStep}
-              disabled={disabled || (!isRunning && !isPaused)}
+            <IconButton
+              onClick={onRun}
+              disabled={isRunning}
               color="primary"
               size="large"
             >
-              <SkipNext />
+              <PlayArrow />
             </IconButton>
           </span>
         </Tooltip>
 
-        <Tooltip title={isRunning ? (isPaused ? "Resume" : "Pause") : "Run"}>
+        <Tooltip title={isPaused ? "Resume" : "Pause"}>
           <span>
-            <IconButton 
-              onClick={isRunning ? onPauseResume : onRun}
-              disabled={disabled}
+            <IconButton
+              onClick={onPauseResume}
+              disabled={!isRunning}
               color="primary"
               size="large"
             >
-              {isRunning && !isPaused ? <Pause /> : <PlayArrow />}
+              {isPaused ? <PlayArrow /> : <Pause />}
             </IconButton>
           </span>
         </Tooltip>
 
         <Tooltip title="Next Step">
           <span>
-            <IconButton 
+            <IconButton
               onClick={onStep}
-              disabled={disabled || (!isRunning && !isPaused)}
+              disabled={!isRunning || currentStep >= totalSteps - 1}
               color="primary"
               size="large"
             >
@@ -75,9 +87,9 @@ const VisualizerControls = ({
 
         <Tooltip title="Reset">
           <span>
-            <IconButton 
+            <IconButton
               onClick={onReset}
-              disabled={disabled}
+              disabled={!isRunning && currentStep === 0}
               color="primary"
               size="large"
             >
@@ -87,48 +99,15 @@ const VisualizerControls = ({
         </Tooltip>
       </Box>
 
-      {/* Progress Section */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 1
-      }}>
-        {/* Step Counter */}
-        <Box sx={{ 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 0.5,
-          minWidth: 120,
-          bgcolor: 'background.paper',
-          borderRadius: 1,
-          py: 0.5,
-          px: 1,
-          border: '1px solid',
-          borderColor: 'divider'
-        }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-            Step {String(currentStep).padStart(2, '0')} / {String(totalSteps - 1).padStart(2, '0')}
-          </Typography>
-        </Box>
-
-        {/* Progress Bar */}
-        <Box sx={{ width: '100%' }}>
-          <LinearProgress 
-            variant="determinate" 
-            value={progress}
-            sx={{
-              height: 6,
-              borderRadius: 3,
-              bgcolor: 'grey.200',
-              '& .MuiLinearProgress-bar': {
-                borderRadius: 3,
-                bgcolor: 'primary.main'
-              }
-            }}
-          />
-        </Box>
+      <Box sx={{ width: '100%' }}>
+        <LinearProgress 
+          variant="determinate" 
+          value={progress} 
+          sx={{ height: 8, borderRadius: 4 }}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+          Step {currentStep + 1} of {totalSteps}
+        </Typography>
       </Box>
     </Box>
   );
