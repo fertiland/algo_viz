@@ -101,11 +101,12 @@ function jobScheduling(jobs) {
   
   // Iterate through all jobs
   for (let i = 0; i < jobs.length; i++) {
+    const job = jobs[i];
     // Find a free slot for this job
-    for (let j = Math.min(maxDeadline - 1, jobs[i].deadline - 1); j >= 0; j--) {
+    for (let j = Math.min(maxDeadline - 1, job.deadline - 1); j >= 0; j--) {
       // If free slot found
       if (!slot[j]) {
-        result[j] = jobs[i];
+        result[j] = job;
         slot[j] = true;
         break;
       }
@@ -165,11 +166,12 @@ function activitySelection(activities) {
   
   // Consider all activities one by one
   for (let i = 1; i < activities.length; i++) {
+    const activity = activities[i];
     // If this activity has start time greater than or equal
     // to the finish time of previously selected activity,
     // then select it
-    if (activities[i].start >= activities[lastSelected].finish) {
-      selected.push(activities[i]);
+    if (activity.start >= activities[lastSelected].finish) {
+      selected.push(activity);
       lastSelected = i;
     }
   }
@@ -182,8 +184,8 @@ function intervalColoring(intervals) {
   // Create events for start and end times
   const events = [];
   for (let i = 0; i < intervals.length; i++) {
-    events.push({ time: intervals[i].start, type: 'start', id: i });
-    events.push({ time: intervals[i].end, type: 'end', id: i });
+    events.push({ time: intervals[i].start, type: 'start', id: intervals[i].id });
+    events.push({ time: intervals[i].end, type: 'end', id: intervals[i].id });
   }
   
   // Sort events by time
@@ -227,22 +229,30 @@ function maxSubArray(nums) {
   // Initialize current sum and maximum sum with the first element
   let curSum = nums[0];
   let maxSum = nums[0];
+  let startIndex = 0;
+  let bestStartIndex = 0;
+  let bestEndIndex = 0;
   
   // Start from the second element
   for (let i = 1; i < nums.length; i++) {
     // If current sum is negative, discard it and start fresh
     if (curSum < 0) {
       curSum = nums[i];
+      startIndex = i;
     } else {
       // Otherwise, add the current element to the running sum
       curSum += nums[i];
     }
     
     // Update maximum sum if current sum is greater
-    maxSum = Math.max(curSum, maxSum);
+    if (curSum > maxSum) {
+      maxSum = curSum;
+      bestStartIndex = startIndex;
+      bestEndIndex = i;
+    }
   }
   
-  return maxSum;
+  return { maxSum, bestStartIndex, bestEndIndex };
 }`
   };
   
@@ -305,22 +315,21 @@ function maxSubArray(nums) {
     }
   };
 
+  // Get available algorithms based on problem type
+  const getAvailableAlgorithms = () => {
+    return [
+      { value: 'jobScheduling', label: 'Job Scheduling', type: 'assignment' },
+      { value: 'fractionalKnapsack', label: 'Fractional Knapsack', type: 'assignment' },
+      { value: 'activitySelection', label: 'Activity Selection', type: 'interval' },
+      { value: 'intervalColoring', label: 'Interval Coloring', type: 'interval' },
+      { value: 'maxSubArray', label: 'Maximum Subarray', type: 'array' }
+    ];
+  };
+
   // Initialize problem data when component loads
   useEffect(() => {
     generateRandomProblem();
   }, []); // Empty dependency array means this runs once when component mounts
-
-  // Get available algorithms based on problem type
-  const getAvailableAlgorithms = () => {
-    switch (problemType) {
-      case 'assignment':
-        return ['jobScheduling', 'fractionalKnapsack'];
-      case 'interval':
-        return ['activitySelection', 'intervalColoring', 'maxSubArray'];
-      default:
-        return [];
-    }
-  };
 
   // Generate random problem based on problem type and algorithm
   const generateRandomProblem = () => {
@@ -424,50 +433,97 @@ function maxSubArray(nums) {
 
   // Draw problem on canvas
   const drawProblem = (problemData) => {
+    if (!canvasRef.current) return;
+    
+    // Extract data from history item if needed
+    let data = problemData;
+    if (problemData?.step) {
+      switch (algorithm) {
+        case 'jobScheduling':
+          data = problemData.jobs || problemData;
+          break;
+        case 'fractionalKnapsack':
+          data = problemData.items || problemData;
+          break;
+        case 'activitySelection':
+          data = problemData.activities || problemData;
+          break;
+        case 'intervalColoring':
+          data = problemData.intervals || problemData;
+          break;
+        case 'maxSubArray':
+          data = problemData.nums || problemData;
+          break;
+      }
+    }
+    
+    // Create current state object for visualization
+    const currentState = {
+      ...problemData,
+      selected: problemData?.selected || [],
+      currentActivity: problemData?.currentActivity,
+      currentEvent: problemData?.currentEvent,
+      colors: problemData?.colors,
+      assignedColors: problemData?.assignedColors,
+      curSum: problemData?.curSum,
+      maxSum: problemData?.maxSum,
+      currentIndex: problemData?.currentIndex,
+      startIndex: problemData?.startIndex,
+      bestStartIndex: problemData?.bestStartIndex,
+      bestEndIndex: problemData?.bestEndIndex
+    };
+    
+    // Draw based on algorithm
+    switch (algorithm) {
+      case 'jobScheduling':
+        drawJobScheduling(data, currentState);
+        break;
+      case 'fractionalKnapsack':
+        drawFractionalKnapsack(data, currentState);
+        break;
+      case 'activitySelection':
+        drawActivitySelection(data, currentState);
+        break;
+      case 'intervalColoring':
+        drawIntervalColoring(data, currentState);
+        break;
+      case 'maxSubArray':
+        drawMaxSubArray(data, currentState);
+        break;
+    }
+  };
+
+  // Draw job scheduling problem
+  const drawJobScheduling = (jobs, currentState) => {
+    if (!Array.isArray(jobs)) {
+      console.error('Invalid jobs data:', jobs);
+      return;
+    }
+
+    // Validate that each job has required properties
+    const validJobs = jobs.filter(job => 
+      job && 
+      typeof job === 'object' && 
+      typeof job.profit === 'number' && 
+      typeof job.deadline === 'number'
+    );
+
+    if (validJobs.length === 0) {
+      console.error('No valid jobs found in data');
+      return;
+    }
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    switch (algorithm) {
-      case 'jobScheduling':
-        drawJobScheduling(ctx, problemData);
-        break;
-      
-      case 'fractionalKnapsack':
-        drawFractionalKnapsack(ctx, problemData);
-        break;
-      
-      case 'activitySelection':
-        drawActivitySelection(ctx, problemData);
-        break;
-      
-      case 'intervalColoring':
-        drawIntervalColoring(ctx, problemData);
-        break;
-      
-      case 'maxSubArray':
-        drawMaxSubArray(ctx, problemData);
-        break;
-      
-      default:
-        break;
-    }
-  };
-
-  // Draw job scheduling problem
-  const drawJobScheduling = (ctx, jobs) => {
-    if (!Array.isArray(jobs)) {
-      console.error('Invalid jobs data:', jobs);
-      return;
-    }
-    
-    const width = ctx.canvas.width;
-    const height = ctx.canvas.height;
+    const width = canvas.width;
+    const height = canvas.height;
     const barHeight = 30;
-    const maxProfit = Math.max(...jobs.map(job => job.profit));
-    const maxDeadline = Math.max(...jobs.map(job => job.deadline));
+    const maxProfit = Math.max(...validJobs.map(job => job.profit));
+    const maxDeadline = Math.max(...validJobs.map(job => job.deadline));
     
     // Draw timeline
     ctx.fillStyle = '#333';
@@ -481,9 +537,15 @@ function maxSubArray(nums) {
     }
     
     // Draw jobs
-    jobs.forEach((job, index) => {
+    validJobs.forEach((job, index) => {
       const y = 50 + index * (barHeight + 10);
       const barWidth = (job.profit / maxProfit) * 200;
+      
+      // Highlight current job if it exists
+      if (currentState.currentJob && currentState.currentJob.id === job.id) {
+        ctx.fillStyle = '#ff9800';
+        ctx.fillRect(45, y - 5, width - 90, barHeight + 10);
+      }
       
       // Draw job bar
       ctx.fillStyle = '#3f51b5';
@@ -491,7 +553,7 @@ function maxSubArray(nums) {
       
       // Draw job info
       ctx.fillStyle = 'white';
-      ctx.fillText(`Job ${job.id}`, 60, y + barHeight/2 + 5);
+      ctx.fillText(`Job ${job.id || index + 1}`, 60, y + barHeight/2 + 5);
       
       // Draw deadline marker
       const deadlineX = 50 + (job.deadline * (width - 100) / maxDeadline);
@@ -506,24 +568,55 @@ function maxSubArray(nums) {
       ctx.fillText(`Profit: ${job.profit}`, 260, y + barHeight/2 + 5);
       ctx.fillText(`Deadline: ${job.deadline}`, 360, y + barHeight/2 + 5);
     });
+
+    // Draw scheduled jobs if they exist
+    if (currentState.result) {
+      currentState.result.forEach((job, index) => {
+        if (job) {
+          const y = 50 + index * (barHeight + 10);
+          ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+          ctx.fillRect(50, y, width - 100, barHeight);
+        }
+      });
+    }
   };
 
   // Draw fractional knapsack problem
-  const drawFractionalKnapsack = (ctx, problem) => {
-    const { items, capacity } = problem;
-    const width = ctx.canvas.width;
-    const height = ctx.canvas.height;
+  const drawFractionalKnapsack = (problem, currentState) => {
+    // Handle both direct problem data and history item data
+    const items = problem.items || problem;
+    const capacity = problem.capacity || currentState.capacity;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const width = canvas.width;
+    const height = canvas.height;
     const itemHeight = 30;
     const maxValue = Math.max(...items.map(item => item.value));
     const maxWeight = Math.max(...items.map(item => item.weight));
     
     // Draw capacity
     ctx.fillStyle = '#333';
+    ctx.font = '14px Arial';
     ctx.fillText(`Knapsack Capacity: ${capacity}`, width/2 - 80, 30);
+    if (currentState?.remainingCapacity !== undefined) {
+      ctx.fillText(`Remaining Capacity: ${currentState.remainingCapacity}`, width/2 + 80, 30);
+    }
     
     // Draw items
     items.forEach((item, index) => {
       const y = 50 + index * (itemHeight + 10);
+      
+      // Highlight current item if it exists
+      if (currentState?.currentItem && currentState.currentItem.id === item.id) {
+        ctx.fillStyle = '#ff9800';
+        ctx.fillRect(45, y - 5, width - 90, itemHeight + 10);
+      }
+      
       const valueBarWidth = (item.value / maxValue) * 150;
       const weightBarWidth = (item.weight / maxWeight) * 150;
       
@@ -537,6 +630,7 @@ function maxSubArray(nums) {
       
       // Draw item info
       ctx.fillStyle = 'white';
+      ctx.font = '12px Arial';
       ctx.fillText(`Item ${item.id}`, 60, y + itemHeight/2 + 5);
       
       // Draw value and weight info
@@ -545,12 +639,41 @@ function maxSubArray(nums) {
       ctx.fillText(`Weight: ${item.weight}`, 410, y + itemHeight/2 + 5);
       ctx.fillText(`Ratio: ${(item.value / item.weight).toFixed(2)}`, 550, y + itemHeight/2 + 5);
     });
+
+    // Draw selected items if they exist
+    if (currentState?.result) {
+      currentState.result.forEach(item => {
+        const index = items.findIndex(i => i.id === item.id);
+        if (index !== -1) {
+          const y = 50 + index * (itemHeight + 10);
+          ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+          ctx.fillRect(45, y - 5, width - 90, itemHeight + 10);
+          if (item.fraction < 1) {
+            ctx.fillStyle = '#ff9800';
+            ctx.fillText(`${(item.fraction * 100).toFixed(1)}%`, 650, y + itemHeight/2 + 5);
+          }
+        }
+      });
+    }
+
+    // Draw total value if available
+    if (currentState?.totalValue !== undefined) {
+      ctx.fillStyle = '#4CAF50';
+      ctx.font = '16px Arial';
+      ctx.fillText(`Total Value: ${currentState.totalValue.toFixed(2)}`, width/2 - 80, height - 20);
+    }
   };
 
   // Draw activity selection problem
-  const drawActivitySelection = (ctx, activities) => {
-    const width = ctx.canvas.width;
-    const height = ctx.canvas.height;
+  const drawActivitySelection = (activities, currentState) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const width = canvas.width;
+    const height = canvas.height;
     const activityHeight = 30;
     const maxFinish = Math.max(...activities.map(activity => activity.finish));
     
@@ -572,6 +695,12 @@ function maxSubArray(nums) {
       const endX = 50 + (activity.finish * (width - 100) / maxFinish);
       const barWidth = endX - startX;
       
+      // Highlight current activity if it exists
+      if (currentState.currentActivity && currentState.currentActivity.id === activity.id) {
+        ctx.fillStyle = '#ff9800';
+        ctx.fillRect(startX - 5, y - 5, barWidth + 10, activityHeight + 10);
+      }
+      
       // Draw activity bar
       ctx.fillStyle = '#3f51b5';
       ctx.fillRect(startX, y, barWidth, activityHeight);
@@ -585,12 +714,33 @@ function maxSubArray(nums) {
       ctx.fillText(`Start: ${activity.start}`, startX - 40, y - 5);
       ctx.fillText(`Finish: ${activity.finish}`, endX + 5, y - 5);
     });
+
+    // Draw selected activities if they exist
+    if (currentState.selected) {
+      currentState.selected.forEach(activity => {
+        const index = activities.findIndex(a => a.id === activity.id);
+        if (index !== -1) {
+          const y = 50 + index * (activityHeight + 10);
+          const startX = 50 + (activity.start * (width - 100) / maxFinish);
+          const endX = 50 + (activity.finish * (width - 100) / maxFinish);
+          const barWidth = endX - startX;
+          ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+          ctx.fillRect(startX - 5, y - 5, barWidth + 10, activityHeight + 10);
+        }
+      });
+    }
   };
 
   // Draw interval coloring problem
-  const drawIntervalColoring = (ctx, intervals) => {
-    const width = ctx.canvas.width;
-    const height = ctx.canvas.height;
+  const drawIntervalColoring = (intervals, currentState) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const width = canvas.width;
+    const height = canvas.height;
     const intervalHeight = 30;
     const maxEnd = Math.max(...intervals.map(interval => interval.end));
     
@@ -605,6 +755,23 @@ function maxSubArray(nums) {
       ctx.fillText(i.toString(), x - 5, height - 25);
     }
     
+    // Define distinct colors for intervals
+    const colors = [
+      '#3f51b5', // Blue
+      '#f44336', // Red
+      '#4caf50', // Green
+      '#ff9800', // Orange
+      '#9c27b0', // Purple
+      '#00bcd4', // Cyan
+      '#ffeb3b', // Yellow
+      '#795548'  // Brown
+    ];
+    
+    // Convert assignedColors to Map if it's an array
+    const assignedColorsMap = currentState.assignedColors instanceof Map 
+      ? currentState.assignedColors 
+      : new Map(Object.entries(currentState.assignedColors || {}));
+    
     // Draw intervals
     intervals.forEach((interval, index) => {
       const y = 50 + index * (intervalHeight + 10);
@@ -612,25 +779,74 @@ function maxSubArray(nums) {
       const endX = 50 + (interval.end * (width - 100) / maxEnd);
       const barWidth = endX - startX;
       
-      // Draw interval bar
-      ctx.fillStyle = '#3f51b5';
-      ctx.fillRect(startX, y, barWidth, intervalHeight);
+      // Highlight current interval if it exists
+      if (currentState.currentEvent && currentState.currentEvent.id === interval.id) {
+        ctx.fillStyle = 'rgba(255, 152, 0, 0.3)';
+        ctx.fillRect(startX - 5, y - 5, barWidth + 10, intervalHeight + 10);
+      }
       
-      // Draw interval info
-      ctx.fillStyle = 'white';
-      ctx.fillText(`Interval ${interval.id}`, startX + 5, y + intervalHeight/2 + 5);
+      // Draw interval bar with color if assigned
+      const colorIndex = assignedColorsMap.get(interval.id);
+      if (colorIndex !== undefined) {
+        // Fill the interval with the assigned color
+        ctx.fillStyle = colors[colorIndex % colors.length];
+        ctx.fillRect(startX, y, barWidth, intervalHeight);
+        
+        // Add a subtle border
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(startX, y, barWidth, intervalHeight);
+        
+        // Draw interval info with color ID
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+        ctx.fillText(`Interval ${interval.id} (Color ${colorIndex + 1})`, startX + 5, y + intervalHeight/2 + 5);
+      } else {
+        // Default color for unassigned intervals
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillRect(startX, y, barWidth, intervalHeight);
+        
+        // Draw interval info without color
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial';
+        ctx.fillText(`Interval ${interval.id}`, startX + 5, y + intervalHeight/2 + 5);
+      }
       
       // Draw start and end info
       ctx.fillStyle = '#333';
       ctx.fillText(`Start: ${interval.start}`, startX - 40, y - 5);
       ctx.fillText(`End: ${interval.end}`, endX + 5, y - 5);
     });
+
+    // Draw current rooms info if it exists
+    if (currentState.maxRooms !== undefined) {
+      ctx.fillStyle = '#333';
+      ctx.font = '14px Arial';
+      ctx.fillText(`Current Rooms: ${currentState.maxRooms}`, width/2 - 80, 30);
+      
+      // Draw color legend
+      const legendY = 60;
+      ctx.font = '12px Arial';
+      for (let i = 0; i < currentState.maxRooms; i++) {
+        const color = colors[i % colors.length];
+        ctx.fillStyle = color;
+        ctx.fillRect(width - 150, legendY + i * 20, 15, 15);
+        ctx.fillStyle = '#333';
+        ctx.fillText(`Room ${i + 1}`, width - 130, legendY + i * 20 + 12);
+      }
+    }
   };
   
   // Draw maximum subarray problem
-  const drawMaxSubArray = (ctx, data) => {
-    const width = ctx.canvas.width;
-    const height = ctx.canvas.height;
+  const drawMaxSubArray = (data, currentState) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const width = canvas.width;
+    const height = canvas.height;
     const barWidth = 40;
     const barSpacing = 10;
     const maxAbsValue = Math.max(...data.map(val => Math.abs(val)));
@@ -664,30 +880,30 @@ function maxSubArray(nums) {
     });
     
     // If we have current and max sums in the history item, display them
-    if (data.curSum !== undefined && data.maxSum !== undefined) {
+    if (currentState.curSum !== undefined && currentState.maxSum !== undefined) {
       ctx.fillStyle = '#333';
       ctx.font = '14px Arial';
-      ctx.fillText(`Current Sum: ${data.curSum}`, 50, 30);
-      ctx.fillText(`Maximum Sum: ${data.maxSum}`, 200, 30);
+      ctx.fillText(`Current Sum: ${currentState.curSum}`, 50, 30);
+      ctx.fillText(`Maximum Sum: ${currentState.maxSum}`, 200, 30);
       
       // If we have current index, highlight it
-      if (data.currentIndex !== undefined) {
-        const x = 50 + data.currentIndex * (barWidth + barSpacing);
+      if (currentState.currentIndex !== undefined) {
+        const x = 50 + currentState.currentIndex * (barWidth + barSpacing);
         ctx.strokeStyle = '#ff9800';
         ctx.lineWidth = 2;
         ctx.strokeRect(x - 2, 50, barWidth + 4, height - 100);
       }
       
       // If we have best subarray range, highlight it
-      if (data.bestStartIndex !== undefined && data.bestEndIndex !== undefined) {
-        const startX = 50 + data.bestStartIndex * (barWidth + barSpacing);
-        const endX = 50 + data.bestEndIndex * (barWidth + barSpacing) + barWidth;
+      if (currentState.bestStartIndex !== undefined && currentState.bestEndIndex !== undefined) {
+        const startX = 50 + currentState.bestStartIndex * (barWidth + barSpacing);
+        const endX = 50 + currentState.bestEndIndex * (barWidth + barSpacing) + barWidth;
         
         ctx.fillStyle = 'rgba(33, 150, 243, 0.3)';
         ctx.fillRect(startX, 50, endX - startX, height - 100);
         
         ctx.fillStyle = '#2196f3';
-        ctx.fillText(`Best Subarray [${data.bestStartIndex}...${data.bestEndIndex}]`, width / 2 - 80, height - 20);
+        ctx.fillText(`Best Subarray [${currentState.bestStartIndex}...${currentState.bestEndIndex}]`, width / 2 - 80, height - 20);
       }
     }
   };
@@ -800,64 +1016,171 @@ function maxSubArray(nums) {
   const runFractionalKnapsack = (problem) => {
     const history = [];
     const { items, capacity } = problem;
+    
+    // Calculate value-to-weight ratio for each item
     const itemsWithRatio = items.map(item => ({
       ...item,
       ratio: item.value / item.weight
-    })).sort((a, b) => b.ratio - a.ratio);
+    }));
+    
+    history.push({
+      step: 'Calculate value-to-weight ratios',
+      items: [...itemsWithRatio],
+      capacity,
+      highlightedLines: [1, 2, 3],
+      explanation: 'First, we calculate the value-to-weight ratio for each item to determine their efficiency.'
+    });
+    
+    // Sort items by value-to-weight ratio in descending order
+    itemsWithRatio.sort((a, b) => b.ratio - a.ratio);
     
     history.push({
       step: 'Sort items by value-to-weight ratio',
       items: [...itemsWithRatio],
       capacity,
-      highlightedLines: [1, 2],
-      explanation: 'First, we sort all items by their value-to-weight ratio in descending order to prioritize the most valuable items per unit weight.'
+      highlightedLines: [5, 6],
+      explanation: 'Sort all items by their value-to-weight ratio in descending order to prioritize the most valuable items per unit weight.'
     });
     
     let totalValue = 0;
     let remainingCapacity = capacity;
     const result = [];
     
+    history.push({
+      step: 'Initialize variables',
+      items: [...itemsWithRatio],
+      capacity,
+      remainingCapacity,
+      totalValue,
+      result: [],
+      highlightedLines: [8, 9, 10],
+      explanation: 'Initialize tracking variables for total value, remaining capacity, and selected items.'
+    });
+    
     for (let i = 0; i < itemsWithRatio.length; i++) {
       const item = itemsWithRatio[i];
+      
       history.push({
-        step: `Consider item ${item.id} with ratio ${item.ratio.toFixed(2)}`,
+        step: `Start iteration ${i + 1}`,
         items: [...itemsWithRatio],
         currentItem: item,
         remainingCapacity,
+        totalValue,
         result: [...result],
-        highlightedLines: [4, 5],
-        explanation: `Considering item ${item.id} with value ${item.value} and weight ${item.weight}.`
+        highlightedLines: [12, 13],
+        explanation: `Starting iteration ${i + 1} to consider item ${item.id}.`
+      });
+      
+      history.push({
+        step: `Consider item ${item.id}`,
+        items: [...itemsWithRatio],
+        currentItem: item,
+        remainingCapacity,
+        totalValue,
+        result: [...result],
+        highlightedLines: [14, 15],
+        explanation: `Considering item ${item.id} with value ${item.value}, weight ${item.weight}, and ratio ${item.ratio.toFixed(2)}.`
       });
       
       if (remainingCapacity >= item.weight) {
+        history.push({
+          step: `Check if whole item ${item.id} fits`,
+          items: [...itemsWithRatio],
+          currentItem: item,
+          remainingCapacity,
+          totalValue,
+          result: [...result],
+          highlightedLines: [17, 18],
+          explanation: `Checking if we can take the whole item ${item.id} (weight: ${item.weight}, remaining capacity: ${remainingCapacity}).`
+        });
+        
         result.push({ ...item, fraction: 1 });
         totalValue += item.value;
         remainingCapacity -= item.weight;
+        
         history.push({
           step: `Take whole item ${item.id}`,
           items: [...itemsWithRatio],
           currentItem: item,
           remainingCapacity,
+          totalValue,
           result: [...result],
-          highlightedLines: [6, 7, 8],
-          explanation: `Taking the whole item ${item.id} as it fits in the remaining capacity.`
+          highlightedLines: [19, 20, 21],
+          explanation: `Taking the whole item ${item.id} as it fits in the remaining capacity. New total value: ${totalValue}, remaining capacity: ${remainingCapacity}.`
         });
       } else if (remainingCapacity > 0) {
-        const fraction = remainingCapacity / item.weight;
-        result.push({ ...item, fraction });
-        totalValue += item.value * fraction;
-        remainingCapacity = 0;
         history.push({
-          step: `Take ${(fraction * 100).toFixed(1)}% of item ${item.id}`,
+          step: `Check if fraction of item ${item.id} fits`,
           items: [...itemsWithRatio],
           currentItem: item,
           remainingCapacity,
+          totalValue,
           result: [...result],
-          highlightedLines: [9, 10, 11],
-          explanation: `Taking ${(fraction * 100).toFixed(1)}% of item ${item.id} to fill the remaining capacity.`
+          highlightedLines: [23, 24],
+          explanation: `Checking if we can take a fraction of item ${item.id} (weight: ${item.weight}, remaining capacity: ${remainingCapacity}).`
+        });
+        
+        const fraction = remainingCapacity / item.weight;
+        history.push({
+          step: `Calculate fraction for item ${item.id}`,
+          items: [...itemsWithRatio],
+          currentItem: item,
+          remainingCapacity,
+          totalValue,
+          result: [...result],
+          highlightedLines: [25],
+          explanation: `Calculating fraction: ${fraction.toFixed(2)} = ${remainingCapacity} / ${item.weight}`
+        });
+        
+        result.push({ ...item, fraction });
+        totalValue += item.value * fraction;
+        remainingCapacity = 0;
+        
+        history.push({
+          step: `Take fraction of item ${item.id}`,
+          items: [...itemsWithRatio],
+          currentItem: item,
+          remainingCapacity,
+          totalValue,
+          result: [...result],
+          highlightedLines: [26, 27, 28],
+          explanation: `Taking ${(fraction * 100).toFixed(1)}% of item ${item.id} to fill the remaining capacity. New total value: ${totalValue.toFixed(2)}.`
+        });
+        
+        history.push({
+          step: `Break loop - knapsack full`,
+          items: [...itemsWithRatio],
+          currentItem: item,
+          remainingCapacity,
+          totalValue,
+          result: [...result],
+          highlightedLines: [29],
+          explanation: 'Breaking the loop as the knapsack is now full.'
         });
         break;
+      } else {
+        history.push({
+          step: `Skip item ${item.id} - no capacity left`,
+          items: [...itemsWithRatio],
+          currentItem: item,
+          remainingCapacity,
+          totalValue,
+          result: [...result],
+          highlightedLines: [31],
+          explanation: `Skipping item ${item.id} as there is no remaining capacity.`
+        });
       }
+      
+      history.push({
+        step: `End iteration ${i + 1}`,
+        items: [...itemsWithRatio],
+        currentItem: item,
+        remainingCapacity,
+        totalValue,
+        result: [...result],
+        highlightedLines: [33],
+        explanation: `Completed iteration ${i + 1}. Current total value: ${totalValue.toFixed(2)}, remaining capacity: ${remainingCapacity}.`
+      });
     }
     
     history.push({
@@ -865,7 +1188,7 @@ function maxSubArray(nums) {
       items: [...itemsWithRatio],
       result: [...result],
       totalValue,
-      highlightedLines: [13],
+      highlightedLines: [35],
       explanation: `Final selection with total value: ${totalValue.toFixed(2)}.`
     });
     
@@ -891,7 +1214,7 @@ function maxSubArray(nums) {
       step: `Select first activity ${sortedActivities[0].id}`,
       activities: [...sortedActivities],
       selected: [...selected],
-      highlightedLines: [4],
+      highlightedLines: [4, 5],
       explanation: `Selecting the first activity ${sortedActivities[0].id} as it ends earliest.`
     });
     
@@ -902,7 +1225,7 @@ function maxSubArray(nums) {
         activities: [...sortedActivities],
         currentActivity: activity,
         selected: [...selected],
-        highlightedLines: [6, 7],
+        highlightedLines: [7, 8, 9],
         explanation: `Considering activity ${activity.id} with start time ${activity.start} and finish time ${activity.finish}.`
       });
       
@@ -914,7 +1237,7 @@ function maxSubArray(nums) {
           activities: [...sortedActivities],
           currentActivity: activity,
           selected: [...selected],
-          highlightedLines: [8, 9],
+          highlightedLines: [10, 11, 12],
           explanation: `Selecting activity ${activity.id} as it starts after the last selected activity finishes.`
         });
       } else {
@@ -923,7 +1246,7 @@ function maxSubArray(nums) {
           activities: [...sortedActivities],
           currentActivity: activity,
           selected: [...selected],
-          highlightedLines: [10],
+          highlightedLines: [13],
           explanation: `Skipping activity ${activity.id} as it overlaps with the last selected activity.`
         });
       }
@@ -933,7 +1256,7 @@ function maxSubArray(nums) {
       step: 'Final selection',
       activities: [...sortedActivities],
       selected: [...selected],
-      highlightedLines: [12],
+      highlightedLines: [15],
       explanation: `Final selection with ${selected.length} non-overlapping activities.`
     });
     
@@ -944,45 +1267,109 @@ function maxSubArray(nums) {
   const runIntervalColoring = (intervals) => {
     const history = [];
     const events = [];
-    intervals.forEach(interval => {
-      events.push({ time: interval.start, type: 'start', id: interval.id });
-      events.push({ time: interval.end, type: 'end', id: interval.id });
-    });
-    events.sort((a, b) => a.time - b.time);
     
     history.push({
-      step: 'Create and sort events',
+      step: 'Create events for start and end times',
+      intervals: [...intervals],
+      highlightedLines: [1, 2, 3],
+      explanation: 'First, we create events for the start and end times of each interval.'
+    });
+    
+    for (let i = 0; i < intervals.length; i++) {
+      events.push({ time: intervals[i].start, type: 'start', id: intervals[i].id });
+      events.push({ time: intervals[i].end, type: 'end', id: intervals[i].id });
+      
+      history.push({
+        step: `Create events for interval ${intervals[i].id}`,
+        intervals: [...intervals],
+        events: [...events],
+        highlightedLines: [4, 5, 6],
+        explanation: `Creating start event (time: ${intervals[i].start}) and end event (time: ${intervals[i].end}) for interval ${intervals[i].id}.`
+      });
+    }
+    
+    history.push({
+      step: 'Sort events by time',
       intervals: [...intervals],
       events: [...events],
-      highlightedLines: [1, 2, 3],
-      explanation: 'First, we create events for the start and end times of each interval and sort them chronologically.'
+      highlightedLines: [8, 9, 10, 11],
+      explanation: 'Sort events chronologically, with end events coming before start events at the same time.'
+    });
+    
+    events.sort((a, b) => {
+      if (a.time !== b.time) return a.time - b.time;
+      return a.type === 'end' ? -1 : 1;
+    });
+    
+    history.push({
+      step: 'Initialize color tracking',
+      intervals: [...intervals],
+      events: [...events],
+      highlightedLines: [13, 14, 15],
+      explanation: 'Initialize sets and maps to track available colors and color assignments.'
     });
     
     const colors = new Set();
     const assignedColors = new Map();
     let maxRooms = 0;
     
-    events.forEach(event => {
+    history.push({
+      step: 'Start processing events',
+      intervals: [...intervals],
+      events: [...events],
+      colors: [...colors],
+      assignedColors: [...assignedColors],
+      maxRooms,
+      highlightedLines: [17, 18],
+      explanation: 'Begin processing events in chronological order.'
+    });
+    
+    events.forEach((event, index) => {
       history.push({
-        step: `Process ${event.type} event for interval ${event.id}`,
+        step: `Process event ${index + 1}: ${event.type} for interval ${event.id}`,
         intervals: [...intervals],
         events: [...events],
         currentEvent: event,
         colors: [...colors],
         assignedColors: [...assignedColors],
         maxRooms,
-        highlightedLines: [5, 6],
+        highlightedLines: [20, 21],
         explanation: `Processing ${event.type} event for interval ${event.id} at time ${event.time}.`
       });
       
       if (event.type === 'start') {
+        history.push({
+          step: `Handle start event for interval ${event.id}`,
+          intervals: [...intervals],
+          events: [...events],
+          currentEvent: event,
+          colors: [...colors],
+          assignedColors: [...assignedColors],
+          maxRooms,
+          highlightedLines: [23, 24],
+          explanation: `Handling start event for interval ${event.id}. Need to assign a new color.`
+        });
+        
         let color = 0;
         while (colors.has(color)) {
           color++;
+          history.push({
+            step: `Check if color ${color} is available`,
+            intervals: [...intervals],
+            events: [...events],
+            currentEvent: event,
+            colors: [...colors],
+            assignedColors: [...assignedColors],
+            maxRooms,
+            highlightedLines: [25, 26],
+            explanation: `Checking if color ${color} is available.`
+          });
         }
+        
         colors.add(color);
         assignedColors.set(event.id, color);
         maxRooms = Math.max(maxRooms, colors.size);
+        
         history.push({
           step: `Assign color ${color} to interval ${event.id}`,
           intervals: [...intervals],
@@ -991,12 +1378,25 @@ function maxSubArray(nums) {
           colors: [...colors],
           assignedColors: [...assignedColors],
           maxRooms,
-          highlightedLines: [7, 8, 9],
-          explanation: `Assigned color ${color} to interval ${event.id}. Current rooms: ${colors.size}.`
+          highlightedLines: [27, 28, 29, 30],
+          explanation: `Assigned color ${color} to interval ${event.id}. Current rooms: ${colors.size}, Maximum rooms: ${maxRooms}.`
         });
       } else {
+        history.push({
+          step: `Handle end event for interval ${event.id}`,
+          intervals: [...intervals],
+          events: [...events],
+          currentEvent: event,
+          colors: [...colors],
+          assignedColors: [...assignedColors],
+          maxRooms,
+          highlightedLines: [32, 33],
+          explanation: `Handling end event for interval ${event.id}. Need to free up its color.`
+        });
+        
         const color = assignedColors.get(event.id);
         colors.delete(color);
+        
         history.push({
           step: `Free color ${color} from interval ${event.id}`,
           intervals: [...intervals],
@@ -1005,20 +1405,20 @@ function maxSubArray(nums) {
           colors: [...colors],
           assignedColors: [...assignedColors],
           maxRooms,
-          highlightedLines: [10, 11],
+          highlightedLines: [34, 35],
           explanation: `Freed color ${color} from interval ${event.id}. Current rooms: ${colors.size}.`
         });
       }
     });
     
     history.push({
-      step: 'Final coloring',
+      step: 'Final coloring result',
       intervals: [...intervals],
       events: [...events],
       colors: [...colors],
       assignedColors: [...assignedColors],
       maxRooms,
-      highlightedLines: [13],
+      highlightedLines: [37],
       explanation: `Final coloring uses ${maxRooms} colors to color all intervals without overlap.`
     });
     
@@ -1035,10 +1435,11 @@ function maxSubArray(nums) {
       curSum: nums[0],
       maxSum: nums[0],
       currentIndex: 0,
+      startIndex: 0,
       bestStartIndex: 0,
       bestEndIndex: 0,
-      highlightedLines: [1, 2],
-      explanation: 'Initialize current sum and maximum sum with the first element of the array.'
+      highlightedLines: [1, 2, 3, 4],
+      explanation: 'Initialize current sum, maximum sum, and tracking variables with the first element.'
     });
     
     let curSum = nums[0];
@@ -1054,9 +1455,10 @@ function maxSubArray(nums) {
         curSum,
         maxSum,
         currentIndex: i,
+        startIndex,
         bestStartIndex,
         bestEndIndex,
-        highlightedLines: [4, 5],
+        highlightedLines: [6, 7],
         explanation: `Considering element ${nums[i]} at index ${i}. Current sum is ${curSum}.`
       });
       
@@ -1072,7 +1474,7 @@ function maxSubArray(nums) {
           startIndex,
           bestStartIndex,
           bestEndIndex,
-          highlightedLines: [6, 7],
+          highlightedLines: [8, 9, 10],
           explanation: `Current sum is negative (${curSum < 0 ? curSum : 0}), so we reset it to the current element ${nums[i]} and start a new subarray from index ${i}.`
         });
       } else {
@@ -1086,7 +1488,7 @@ function maxSubArray(nums) {
           startIndex,
           bestStartIndex,
           bestEndIndex,
-          highlightedLines: [8, 9],
+          highlightedLines: [11, 12],
           explanation: `Current sum is non-negative, so we add the current element ${nums[i]} to it. New current sum is ${curSum}.`
         });
       }
@@ -1104,7 +1506,7 @@ function maxSubArray(nums) {
           startIndex,
           bestStartIndex,
           bestEndIndex,
-          highlightedLines: [10, 11],
+          highlightedLines: [13, 14, 15, 16],
           explanation: `Current sum ${curSum} is greater than maximum sum ${maxSum < curSum ? maxSum : curSum}, so we update maximum sum to ${curSum} and the best subarray to indices [${startIndex}...${i}].`
         });
       }
@@ -1117,7 +1519,7 @@ function maxSubArray(nums) {
       maxSum,
       bestStartIndex,
       bestEndIndex,
-      highlightedLines: [13],
+      highlightedLines: [18],
       explanation: `The maximum subarray sum is ${maxSum}, found in the subarray from index ${bestStartIndex} to ${bestEndIndex}.`
     });
     
@@ -1189,8 +1591,8 @@ function maxSubArray(nums) {
               disabled={isRunning}
             >
               {getAvailableAlgorithms().map((algo) => (
-                <MenuItem key={algo} value={algo}>
-                  {algorithmInfo[algo].name}
+                <MenuItem key={algo.value} value={algo.value}>
+                  {algo.label}
                 </MenuItem>
               ))}
             </Select>
@@ -1217,6 +1619,17 @@ function maxSubArray(nums) {
               disabled={isRunning}
             />
           </Box>
+
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={generateRandomProblem}
+            disabled={isRunning}
+            sx={{ mb: 2 }}
+            startIcon={<RefreshIcon />}
+          >
+            Generate Problem
+          </Button>
 
           <VisualizerControls 
             onRun={runAlgorithm}
@@ -1245,7 +1658,7 @@ function maxSubArray(nums) {
                   setCurrentStep(nextStep);
                   setExplanation(historyItem.explanation || '');
                   setHighlightedLines(historyItem.highlightedLines || []);
-                  updateVisualization(historyItem);
+                  drawProblem(historyItem);
                 }
               }
             }}
@@ -1265,9 +1678,23 @@ function maxSubArray(nums) {
             height: '500px',
             width: '100%',
             position: 'relative',
-            overflow: 'hidden',
+            overflow: 'auto',
             border: '1px solid #e0e0e0',
-            borderRadius: 1
+            borderRadius: 1,
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#888',
+              borderRadius: '4px',
+              '&:hover': {
+                background: '#555',
+              },
+            },
           }}>
             <canvas
               ref={canvasRef}

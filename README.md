@@ -5,6 +5,7 @@ AlgoViz is an interactive web application designed to help users understand and 
 ![AlgoViz Screenshot](public/home.png)
 ![AlgoViz Screenshot searching algorithm](public/searching.png)
 ![AlgoViz Screenshot sorting algorithm](public/sorting.png)
+
 ## Features
 
 - **Interactive Visualizations** - Step through algorithms at your own pace
