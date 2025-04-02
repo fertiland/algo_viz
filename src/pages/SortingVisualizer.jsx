@@ -1130,13 +1130,14 @@ function insertionSort(arr) {
           </Box>
 
           <Box sx={{ mb: 2 }}>
-            <Typography gutterBottom>Speed</Typography>
+            <Typography gutterBottom>Animation Speed</Typography>
             <Slider
               value={speed}
               min={10}
               max={100}
               onChange={(_, value) => setSpeed(value)}
               disabled={isRunning}
+              aria-labelledby="animation-speed-slider"
             />
           </Box>
 
@@ -1154,29 +1155,15 @@ function insertionSort(arr) {
                 }
               }
             }}
-            onStep={() => {
-              if (currentStep < totalSteps - 1) {
-                if (animationRef.current) {
-                  clearTimeout(animationRef.current);
-                  animationRef.current = null;
-                }
-                setIsPaused(true);
-                const nextStep = currentStep + 1;
-                const historyItem = algorithmHistory[nextStep];
-                if (historyItem) {
-                  setCurrentStep(nextStep);
-                  setExplanation(historyItem.explanation || '');
-                  setHighlightedLines(historyItem.highlightedLines || []);
-                  updateVisualization(historyItem);
-                }
-              }
-            }}
+            onStep={stepForward}
             onReset={resetVisualization}
             isRunning={isRunning}
             isPaused={isPaused}
             currentStep={currentStep}
             totalSteps={totalSteps}
-            disabled={isRunning && !isPaused}
+            disabled={false}
+            speed={speed}
+            onSpeedChange={setSpeed}
           />
         </>
       }

@@ -1698,6 +1698,18 @@ function reverseString(s) {
             </Grid>
           </Box>
       
+          <Box sx={{ mb: 2 }}>
+            <Typography gutterBottom>Animation Speed</Typography>
+            <Slider
+              value={speed}
+              min={10}
+              max={100}
+              onChange={(_, value) => setSpeed(value)}
+              disabled={isRunning}
+              aria-labelledby="animation-speed-slider"
+            />
+          </Box>
+      
           {/* Custom Input */}
           <Box sx={{ mb: 2 }}>
             <Typography gutterBottom>
@@ -1750,18 +1762,6 @@ function reverseString(s) {
             </Button>
           </Box>
           
-          {/* Speed Control */}
-          <Box sx={{ mb: 2 }}>
-            <Typography gutterBottom>Animation Speed</Typography>
-            <Slider
-              value={speed}
-              onChange={(_, value) => setSpeed(value)}
-              min={0}
-              max={100}
-              marks
-            />
-          </Box>
-            
           {/* Algorithm Controls */}
           <VisualizerControls 
             onRun={runAlgorithm}
@@ -1848,15 +1848,16 @@ function reverseString(s) {
               const canvas = canvasRef.current;
               if (canvas) {
                 const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                drawProblem({ problem: originalProblem });
+                drawProblem(originalProblem);
               }
             }}
             isRunning={isRunning}
             isPaused={isPaused}
             currentStep={currentStep}
             totalSteps={totalSteps}
-            disabled={!problem}
+            disabled={false}
+            speed={speed}
+            onSpeedChange={setSpeed}
           />
         </>
       }

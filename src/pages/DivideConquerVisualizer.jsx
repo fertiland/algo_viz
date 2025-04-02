@@ -508,6 +508,11 @@ function bruteForceClosestPair(points) {
     setProblem(newProblem);
     setOriginalProblem([...newProblem]);
     resetVisualization();
+    
+    // Draw the initial state of the problem
+    setTimeout(() => {
+      drawProblem({ array: newProblem });
+    }, 0);
   }
 
   // Handle custom input
@@ -1996,52 +2001,6 @@ function bruteForceClosestPair(points) {
             />
           </Box>
           
-          {algorithm === 'binarySearch' && result && (
-            <Box sx={{ mb: 2 }}>
-              <Typography gutterBottom>Target Value</Typography>
-              <TextField
-                type="number"
-                value={result.target || 0}
-                onChange={(e) => setResult({ ...result, target: parseInt(e.target.value) || 0 })}
-                disabled={isRunning}
-                fullWidth
-              />
-            </Box>
-          )}
-          
-          <Box sx={{ mb: 2 }}>
-            <Typography gutterBottom>Custom Input</Typography>
-            <TextField
-              placeholder={algorithm === 'closestPair' ? "(x1,y1), (x2,y2), ..." : "1, 5, 3, 8, ..."}
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              disabled={isRunning}
-              fullWidth
-              multiline={algorithm === 'closestPair'}
-              rows={algorithm === 'closestPair' ? 3 : 1}
-              sx={{ mb: 1 }}
-            />
-            <Button 
-              variant="outlined" 
-              onClick={handleCustomInput}
-              disabled={isRunning}
-              fullWidth
-            >
-              Use Custom Input
-            </Button>
-          </Box>
-          
-          <Button 
-            variant="contained" 
-            onClick={generateRandomProblem}
-            disabled={isRunning}
-            fullWidth
-            sx={{ mb: 2 }}
-            startIcon={<RestartAltIcon />}
-          >
-            Generate Random Problem
-          </Button>
-          
           <Box sx={{ mb: 2 }}>
             <Typography gutterBottom>Animation Speed</Typography>
             <Slider
@@ -2050,6 +2009,19 @@ function bruteForceClosestPair(points) {
               max={100}
               onChange={(_, value) => setSpeed(value)}
             />
+          </Box>
+          
+          {/* Generate Random Problem Button */}
+          <Box sx={{ mb: 2 }}>
+            <Button
+              variant="contained"
+              onClick={generateRandomProblem}
+              startIcon={<RestartAltIcon />}
+              fullWidth
+              sx={{ mb: 2 }}
+            >
+              Generate Random Problem
+            </Button>
           </Box>
           
           <VisualizerControls 
@@ -2105,51 +2077,10 @@ function bruteForceClosestPair(points) {
             currentStep={currentStep}
             totalSteps={totalSteps}
             disabled={isRunning && !isPaused}
+            speed={speed}
+            onSpeedChange={setSpeed}
           />
           
-          {/* Current Progress Slider */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Current Progress
-            </Typography>
-            <Slider
-              value={currentStep}
-              min={0}
-              max={Math.max(1, totalSteps - 1)}
-              onChange={(_, value) => {
-                // Pause any ongoing animation
-                if (isRunning && !isPaused) {
-                  setIsPaused(true);
-                  if (animationRef.current) {
-                    clearTimeout(animationRef.current);
-                    animationRef.current = null;
-                  }
-                }
-                
-                // Update current step
-                setCurrentStep(value);
-                
-                // Get the history item and update visualization
-                const historyItem = algorithmHistory[value];
-                if (historyItem) {
-                  setExplanation(historyItem.explanation || '');
-                  setHighlightedLines(historyItem.highlightedLines || []);
-                  
-                  // Ensure canvas is updated
-                  const canvas = canvasRef.current;
-                  if (canvas) {
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    drawProblem(historyItem);
-                  }
-                }
-              }}
-              disabled={totalSteps <= 1}
-              marks
-              valueLabelDisplay="auto"
-              valueLabelFormat={(value) => `Step ${value + 1} of ${totalSteps}`}
-            />
-          </Box>
         </>
       }
       visualization={

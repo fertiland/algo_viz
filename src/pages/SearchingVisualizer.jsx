@@ -1212,6 +1212,18 @@ function searchRotatedArray(arr, target) {
           </Box>
           
           <Box sx={{ mb: 2 }}>
+            <Typography gutterBottom>Animation Speed</Typography>
+            <Slider
+              value={speed}
+              min={10}
+              max={100}
+              onChange={(_, value) => setSpeed(value)}
+              disabled={isRunning}
+              aria-labelledby="animation-speed-slider"
+            />
+          </Box>
+          
+          <Box sx={{ mb: 2 }}>
             <Typography gutterBottom>Target Value</Typography>
             <TextField
               type="number"
@@ -1219,17 +1231,6 @@ function searchRotatedArray(arr, target) {
               onChange={(e) => setTargetValue(parseInt(e.target.value) || 0)}
               disabled={isRunning}
               fullWidth
-            />
-          </Box>
-          
-          <Box sx={{ mb: 2 }}>
-            <Typography gutterBottom>Speed</Typography>
-            <Slider
-              value={speed}
-              min={10}
-              max={100}
-              onChange={(_, value) => setSpeed(value)}
-              disabled={isRunning}
             />
           </Box>
           
@@ -1249,38 +1250,25 @@ function searchRotatedArray(arr, target) {
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <TextField
-                    label="Lower Bound"
                     type="number"
+                    label="Lower Bound"
                     value={lowerBound}
                     onChange={(e) => setLowerBound(parseInt(e.target.value) || 0)}
                     disabled={isRunning}
                     fullWidth
-                    size="small"
                   />
                 </Grid>
                 <Grid item xs={6}>
                   <TextField
-                    label="Upper Bound"
                     type="number"
+                    label="Upper Bound"
                     value={upperBound}
                     onChange={(e) => setUpperBound(parseInt(e.target.value) || 0)}
                     disabled={isRunning}
                     fullWidth
-                    size="small"
                   />
                 </Grid>
               </Grid>
-            </Box>
-          ) : algorithm !== 'peakElement' ? (
-            <Box sx={{ mb: 2 }}>
-              <Typography gutterBottom>Target Value</Typography>
-              <TextField
-                type="number"
-                value={targetValue}
-                onChange={(e) => setTargetValue(parseInt(e.target.value) || 0)}
-                disabled={isRunning}
-                fullWidth
-              />
             </Box>
           ) : null}
           
@@ -1318,48 +1306,16 @@ function searchRotatedArray(arr, target) {
           
           <VisualizerControls 
             onRun={startSearch}
-            onPauseResume={() => {
-              if (isPaused) {
-                setIsPaused(false);
-                animateAlgorithm(currentStep, searchHistory);
-              } else {
-                setIsPaused(true);
-                if (animationRef.current) {
-                  clearTimeout(animationRef.current);
-                  animationRef.current = null;
-                }
-              }
-            }}
-            onStep={() => {
-              if (currentStep < totalSteps - 1) {
-                if (animationRef.current) {
-                  clearTimeout(animationRef.current);
-                  animationRef.current = null;
-                }
-                setIsPaused(true);
-                const nextStep = currentStep + 1;
-                const historyItem = searchHistory[nextStep];
-                if (historyItem) {
-                  setCurrentStep(nextStep);
-                  setExplanation(historyItem.explanation || '');
-                  setHighlightedLines(historyItem.highlightedLines || []);
-                  drawArray(
-                    array,
-                    historyItem.comparing || [],
-                    historyItem.currentIndex !== undefined ? historyItem.currentIndex : -1,
-                    historyItem.low !== undefined ? historyItem.low : -1,
-                    historyItem.high !== undefined ? historyItem.high : -1,
-                    historyItem.rangeIndices || []
-                  );
-                }
-              }
-            }}
+            onPauseResume={pauseSearch}
+            onStep={stepForward}
             onReset={resetVisualization}
             isRunning={isRunning}
             isPaused={isPaused}
             currentStep={currentStep}
             totalSteps={totalSteps}
-            disabled={isRunning && !isPaused}
+            disabled={false}
+            speed={speed}
+            onSpeedChange={setSpeed}
           />
         </>
       }

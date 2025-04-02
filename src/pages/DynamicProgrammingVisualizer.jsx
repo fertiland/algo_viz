@@ -2552,18 +2552,15 @@ function minDistance(word1, word2) {
             </Grid>
 
             <Grid item xs={12}>
-              <Typography gutterBottom>Speed</Typography>
+              <Typography gutterBottom>Animation Speed</Typography>
               <Slider
                 value={speed}
-                onChange={(e, value) => setSpeed(value)}
                 min={10}
                 max={100}
-                step={10}
+                onChange={(_, value) => setSpeed(value)}
                 disabled={isRunning}
+                aria-labelledby="animation-speed-slider"
               />
-              <Typography variant="caption" color="text.secondary">
-                {speed}ms per step
-              </Typography>
             </Grid>
 
             <Grid item xs={12}>
@@ -2586,8 +2583,10 @@ function minDistance(word1, word2) {
                 totalSteps={totalSteps}
                 onRun={runAlgorithm}
                 onPauseResume={pauseResumeVisualization}
-                onNext={stepForward}
+                onStep={stepForward}
                 onReset={resetVisualization}
+                speed={speed}
+                onSpeedChange={setSpeed}
               />
             </Grid>
           </Grid>

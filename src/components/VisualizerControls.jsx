@@ -15,6 +15,8 @@ import { PlayArrow, Pause, SkipNext, RestartAlt } from '@mui/icons-material';
  * @param {number} props.currentStep Current step in the algorithm
  * @param {number} props.totalSteps Total number of steps in the algorithm
  * @param {boolean} props.disabled Whether the controls should be disabled
+ * @param {number} props.speed Animation speed value (0-100) - kept for backward compatibility
+ * @param {Function} props.onSpeedChange Function to call when speed is changed - kept for backward compatibility
  */
 const VisualizerControls = ({
   onRun,
@@ -25,7 +27,9 @@ const VisualizerControls = ({
   isPaused = false,
   currentStep = 0,
   totalSteps = 0,
-  disabled = false
+  disabled = false,
+  speed = 50,
+  onSpeedChange = () => {}
 }) => {
   // Calculate progress percentage
   const progress = totalSteps > 0 ? (currentStep / (totalSteps - 1)) * 100 : 0;

@@ -1610,13 +1610,14 @@ function maxSubArray(nums) {
           </Box>
 
           <Box sx={{ mb: 2 }}>
-            <Typography gutterBottom>Speed</Typography>
+            <Typography gutterBottom>Animation Speed</Typography>
             <Slider
               value={speed}
               min={10}
               max={100}
               onChange={(_, value) => setSpeed(value)}
               disabled={isRunning}
+              aria-labelledby="animation-speed-slider"
             />
           </Box>
 
@@ -1668,6 +1669,8 @@ function maxSubArray(nums) {
             currentStep={currentStep}
             totalSteps={totalSteps}
             disabled={isRunning && !isPaused}
+            speed={speed}
+            onSpeedChange={setSpeed}
           />
         </>
       }

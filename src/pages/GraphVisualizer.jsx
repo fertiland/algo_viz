@@ -2237,6 +2237,8 @@ function graphColoring(graph, maxColors = 4) {
             currentStep={currentStep}
             totalSteps={totalSteps}
             disabled={false}
+            speed={speed}
+            onSpeedChange={setSpeed}
           />
         </>
       }
