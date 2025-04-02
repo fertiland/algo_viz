@@ -2164,51 +2164,6 @@ function bruteForceClosestPair(points) {
             />
           </Box>
 
-          {/* Current Progress Slider */}
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Current Progress
-            </Typography>
-            <Slider
-              value={currentStep}
-              min={0}
-              max={Math.max(1, totalSteps - 1)}
-              onChange={(_, value) => {
-                // Pause any ongoing animation
-                if (isRunning && !isPaused) {
-                  setIsPaused(true);
-                  if (animationRef.current) {
-                    clearTimeout(animationRef.current);
-                    animationRef.current = null;
-                  }
-                }
-                
-                // Update current step
-                setCurrentStep(value);
-                
-                // Update visualization based on history item
-                if (algorithmHistory.length > 0) {
-                  const historyItem = algorithmHistory[value];
-                  if (historyItem) {
-                    setExplanation(historyItem.explanation || '');
-                    setHighlightedLines(historyItem.highlightedLines || []);
-                    
-                    // Ensure canvas is updated
-                    const canvas = canvasRef.current;
-                    if (canvas) {
-                      const ctx = canvas.getContext('2d');
-                      ctx.clearRect(0, 0, canvas.width, canvas.height);
-                      drawProblem(historyItem);
-                    }
-                  }
-                }
-              }}
-              disabled={!algorithmHistory.length}
-              marks={totalSteps > 10 ? false : Array.from({ length: Math.min(totalSteps, 10) }, (_, i) => ({ value: i }))}
-              valueLabelDisplay="auto"
-            />
-          </Paper>
-          
           {/* Explanation Card */}
           <Card sx={{ mb: 2 }}>
             <CardContent>
@@ -2220,8 +2175,8 @@ function bruteForceClosestPair(points) {
               </Typography>
             </CardContent>
           </Card>
-          
-          {/* Code Display */}
+
+          {/* Code Highlighter */}
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2" gutterBottom>Implementation Code:</Typography>
             <CodeHighlighter

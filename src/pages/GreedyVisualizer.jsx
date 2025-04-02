@@ -1673,38 +1673,12 @@ function maxSubArray(nums) {
       }
       visualization={
         <>
-          <Box sx={{ 
-            mb: 2, 
-            height: '500px',
-            width: '100%',
-            position: 'relative',
-            overflow: 'auto',
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: '#f1f1f1',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: '#888',
-              borderRadius: '4px',
-              '&:hover': {
-                background: '#555',
-              },
-            },
-          }}>
+          <Box sx={{ mb: 2 }}>
             <canvas
               ref={canvasRef}
               width={800}
-              height={500}
-              style={{ 
-                width: '100%', 
-                height: '100%',
-                display: 'block'
-              }}
+              height={400}
+              style={{ border: '1px solid #ccc', width: '100%', height: '400px' }}
             />
           </Box>
 
