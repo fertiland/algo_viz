@@ -385,9 +385,76 @@ function bruteForceClosestPair(points) {
   };
 
   return minDist;
-}`
+}`,
+
+    heap: `// Heap Implementation
+function heapSort(arr) {
+  // Build max heap
+  for (let i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
+    heapify(arr, arr.length, i);
   }
   
+  // Extract elements from heap one by one
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Move current root to end
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+    
+    // Call max heapify on the reduced heap
+    heapify(arr, i, 0);
+  }
+  
+  return arr;
+}
+
+// To heapify a subtree with root at index i
+function heapify(arr, n, i) {
+  let largest = i; // Initialize largest as root
+  const left = 2 * i + 1; // left = 2*i + 1
+  const right = 2 * i + 2; // right = 2*i + 2
+  
+  // If left child is larger than root
+  if (left < n && arr[left] > arr[largest]) {
+    largest = left;
+  }
+  
+  // If right child is larger than largest so far
+  if (right < n && arr[right] > arr[largest]) {
+    largest = right;
+  }
+  
+  // If largest is not root
+  if (largest !== i) {
+    // Swap
+    [arr[i], arr[largest]] = [arr[largest], arr[i]];
+    
+    // Recursively heapify the affected sub-tree
+    heapify(arr, n, largest);
+  }
+}`,
+
+    karatsuba: {
+      name: 'Karatsuba Multiplication',
+      description: 'Karatsuba algorithm is a fast multiplication algorithm that uses a divide and conquer approach to multiply two numbers.',
+      timeComplexity: {
+        best: 'O(n^log₂(3))',
+        average: 'O(n^log₂(3))',
+        worst: 'O(n^log₂(3))'
+      },
+      spaceComplexity: 'O(n)'
+    },
+    strassenMatrix: {
+      name: 'Strassen Matrix Multiplication',
+      description: 'Strassen algorithm is a divide and conquer algorithm for matrix multiplication that is faster than the standard matrix multiplication algorithm.',
+      timeComplexity: {
+        best: 'O(n^log₂(7))',
+        average: 'O(n^log₂(7))',
+        worst: 'O(n^log₂(7))'
+      },
+      spaceComplexity: 'O(n²)'
+    }
+  };
+
+
   // Algorithm complexity information
   const algorithmInfo = {
     mergeSort: {
@@ -465,7 +532,7 @@ function bruteForceClosestPair(points) {
 
   // Helper functions for algorithm states and data visualization
   const getAvailableAlgorithms = () => {
-    return ['mergeSort', 'quickSort', 'binarySearch', 'maxSubarray', 'closestPair'];
+    return ['mergeSort', 'quickSort', 'binarySearch', 'maxSubarray', 'closestPair', 'heap'];
   }
 
   // Generate random problem based on selected algorithm
@@ -499,6 +566,11 @@ function bruteForceClosestPair(points) {
           x: Math.floor(Math.random() * width),
           y: Math.floor(Math.random() * height)
         }));
+        break;
+        
+      case 'heap':
+        // Generate heap elements
+        newProblem = Array.from({ length: problemSize }, () => Math.floor(Math.random() * 100));
         break;
         
       default:
@@ -608,6 +680,9 @@ function bruteForceClosestPair(points) {
         break;
       case 'closestPair':
         drawClosestPair(ctx, historyItem);
+        break;
+      case 'heap':
+        drawHeap(ctx, historyItem);
         break;
       default:
         break;
@@ -953,6 +1028,79 @@ function bruteForceClosestPair(points) {
     ]);
   }
 
+  const drawHeap = (ctx, data) => {
+    const { array, heapSize, heapify, insert } = data || {};
+    if (!array) return;
+    
+    const width = ctx.canvas.width;
+    const height = ctx.canvas.height;
+    const barWidth = width / array.length;
+    
+    // Draw array bars
+    array.forEach((value, index) => {
+      const barHeight = (value / Math.max(...array)) * (height - 60);
+      const x = index * barWidth;
+      const y = height - barHeight - 30;
+      
+      // Set bar color based on state
+      let color = '#90caf9'; // Default blue
+      
+      // Element is in heap
+      if (heapSize && heapSize.includes(index)) {
+        color = '#8bc34a'; // Light green
+      }
+      
+      // Element is being heapified
+      if (heapify && heapify.includes(index)) {
+        color = '#ff9800'; // Orange
+      }
+      
+      // Element is being inserted
+      if (insert && insert.includes(index)) {
+        color = '#f44336'; // Red
+      }
+      
+      // Draw the bar
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, barWidth - 1, barHeight);
+      
+      // Draw value on the bar
+      ctx.fillStyle = '#000000';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(value.toString(), x + barWidth / 2, y - 5);
+      
+      // Draw index below the chart
+      ctx.fillText(index.toString(), x + barWidth / 2, height - 5);
+    });
+    
+    // Draw heap size
+    ctx.fillStyle = '#f44336';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Heap Size: ${heapSize ? heapSize.length : 0}`, 10, 20);
+    
+    // Draw heapify
+    ctx.fillStyle = '#8bc34a';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Heapify: [${heapify ? heapify.join(', ') : ''}]`, 10, 40);
+    
+    // Draw insert
+    ctx.fillStyle = '#f44336';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Insert: [${insert ? insert.join(', ') : ''}]`, 10, 60);
+    
+    // Draw legend
+    drawLegend(ctx, [
+      { color: '#90caf9', label: 'Array Element' },
+      { color: '#8bc34a', label: 'Heap' },
+      { color: '#ff9800', label: 'Heapify' },
+      { color: '#f44336', label: 'Insert' }
+    ]);
+  }
+
   // Helper function to draw legend
   const drawLegend = (ctx, items) => {
     const legendX = ctx.canvas.width - 150;
@@ -1031,6 +1179,9 @@ function bruteForceClosestPair(points) {
         break;
       case 'closestPair':
         result = runClosestPair([...problem], history);
+        break;
+      case 'heap':
+        result = runHeapSort([...problem], history);
         break;
       default:
         break;
