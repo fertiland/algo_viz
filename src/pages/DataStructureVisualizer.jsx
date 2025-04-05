@@ -537,6 +537,64 @@ class Graph {
   }
 }`,
     },
+    doublyLinkedList: {
+      append: `// Doubly Linked List implementation
+class Node {
+  constructor(data) {
+    this.data = data;
+    this.next = null;
+    this.prev = null;
+  }
+}
+
+class DoublyLinkedList {
+  constructor() {
+    this.head = null;
+    this.tail = null;
+  }
+  
+  // Append operation - O(1)
+  append(data) {
+    // Create a new node
+    const newNode = new Node(data);
+    
+    // If list is empty, make new node both head and tail
+    if (this.head === null) {
+      this.head = newNode;
+      this.tail = newNode;
+      return;
+    }
+    
+    // Add the new node at the end
+    newNode.prev = this.tail;
+    this.tail.next = newNode;
+    this.tail = newNode;
+  }
+  
+  // Remove head operation - O(1)
+  removeHead() {
+    // Check if list is empty
+    if (this.head === null) {
+      return null;
+    }
+    
+    // Store the data to return
+    const data = this.head.data;
+    
+    // If there's only one node
+    if (this.head === this.tail) {
+      this.head = null;
+      this.tail = null;
+    } else {
+      // Update head and its prev pointer
+      this.head = this.head.next;
+      this.head.prev = null;
+    }
+    
+    return data;
+  }
+}`,
+    },
   };
   
   // Data structure information
@@ -614,6 +672,17 @@ class Graph {
       },
       spaceComplexity: 'O(V²)',
       description: 'An adjacency matrix represents a graph as a 2D matrix where each cell indicates if an edge exists between two vertices.'
+    },
+    doublyLinkedList: {
+      name: 'Doubly Linked List',
+      timeComplexity: {
+        append: 'O(1)',
+        removeHead: 'O(1)',
+        insertAtPosition: 'O(n)',
+        removeAtPosition: 'O(n)',
+      },
+      spaceComplexity: 'O(n)',
+      description: 'A doubly linked list is a linear data structure where each node contains data and two pointers: one to the next node and one to the previous node. This allows for bidirectional traversal.'
     }
   };
 
@@ -661,6 +730,9 @@ class Graph {
       case 'adjacencyList':
       case 'adjacencyMatrix':
         drawGraph(ctx, width, height);
+        break;
+      case 'doublyLinkedList':
+        drawDoublyLinkedList(ctx, elements, width, height);
         break;
       default:
         break;
@@ -843,6 +915,90 @@ class Graph {
       ctx.font = '14px Arial';
       ctx.textAlign = 'center';
       ctx.fillText('Head', startX, startY - nodeRadius - 15);
+    }
+  };
+
+  // Draw doubly linked list visualization
+  const drawDoublyLinkedList = (ctx, elements, width, height) => {
+    const nodeRadius = 25;
+    const horizontalSpacing = 100;
+    const startX = 50;
+    const startY = height / 2;
+    
+    // Draw doubly linked list nodes
+    elements.forEach((element, index) => {
+      const x = startX + index * horizontalSpacing;
+      
+      // Draw node circle
+      ctx.fillStyle = '#ff5722';
+      ctx.beginPath();
+      ctx.arc(x, startY, nodeRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Draw node border
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(x, startY, nodeRadius, 0, 2 * Math.PI);
+      ctx.stroke();
+      
+      // Draw text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(element.toString(), x, startY);
+      
+      // Draw next pointer
+      if (index < elements.length - 1) {
+        const nextX = startX + (index + 1) * horizontalSpacing;
+        
+        // Draw arrow line
+        ctx.strokeStyle = '#000000';
+        ctx.beginPath();
+        ctx.moveTo(x + nodeRadius, startY);
+        ctx.lineTo(nextX - nodeRadius, startY);
+        ctx.stroke();
+        
+        // Draw arrow head
+        ctx.beginPath();
+        ctx.moveTo(nextX - nodeRadius, startY);
+        ctx.lineTo(nextX - nodeRadius - 10, startY - 5);
+        ctx.lineTo(nextX - nodeRadius - 10, startY + 5);
+        ctx.closePath();
+        ctx.fill();
+      }
+      
+      // Draw prev pointer
+      if (index > 0) {
+        const prevX = startX + (index - 1) * horizontalSpacing;
+        
+        // Draw arrow line
+        ctx.strokeStyle = '#666666';
+        ctx.setLineDash([5, 5]); // Dashed line for prev pointer
+        ctx.beginPath();
+        ctx.moveTo(x - nodeRadius, startY);
+        ctx.lineTo(prevX + nodeRadius, startY);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+        
+        // Draw arrow head
+        ctx.beginPath();
+        ctx.moveTo(prevX + nodeRadius, startY);
+        ctx.lineTo(prevX + nodeRadius + 10, startY - 5);
+        ctx.lineTo(prevX + nodeRadius + 10, startY + 5);
+        ctx.closePath();
+        ctx.fill();
+      }
+    });
+    
+    // Draw head and tail pointers
+    if (elements.length > 0) {
+      ctx.fillStyle = '#000000';
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Head', startX, startY - nodeRadius - 15);
+      ctx.fillText('Tail', startX + (elements.length - 1) * horizontalSpacing, startY - nodeRadius - 15);
     }
   };
 
@@ -1294,6 +1450,12 @@ class Graph {
       case 'adjacencyMatrix':
         addVertex();
         return;
+      case 'doublyLinkedList':
+        newElements = [...elements, value];
+        operation = `Append(${value})`;
+        explanation = `Appended ${value} to the end of the doubly linked list with O(1) time complexity.`;
+        lines = getHighlightedLines('add');
+        break;
       default:
         break;
     }
@@ -1382,6 +1544,13 @@ class Graph {
       case 'adjacencyMatrix':
         removeVertex();
         return;
+      case 'doublyLinkedList':
+        removedValue = elements[0];
+        newElements = elements.slice(1);
+        operation = 'RemoveHead()';
+        explanation = `Removed head node with value ${removedValue} from the doubly linked list with O(1) time complexity.`;
+        lines = getHighlightedLines('remove');
+        break;
       default:
         break;
     }
@@ -1532,6 +1701,8 @@ class Graph {
         return codeSnippets.adjacencyList.addVertex;
       case 'adjacencyMatrix':
         return codeSnippets.adjacencyMatrix.addVertex;
+      case 'doublyLinkedList':
+        return codeSnippets.doublyLinkedList.append;
       default:
         return '';
     }
@@ -1640,6 +1811,31 @@ class Graph {
             </Button>
           </>
         );
+      case 'doublyLinkedList':
+        return (
+          <>
+            <Button
+              variant={operations.length > 0 && operations[operations.length - 1].startsWith('Append') ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => {
+                setHighlightedLines([25, 26, 27, 28, 29, 30]);
+                setExplanation('The append operation adds a new node to the doubly linked list with O(1) time complexity.');
+              }}
+            >
+              Append
+            </Button>
+            <Button
+              variant={operations.length > 0 && operations[operations.length - 1] === 'RemoveHead()' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => {
+                setHighlightedLines([35, 36, 37, 38, 39, 40]);
+                setExplanation('The removeHead operation removes and returns the head node from the doubly linked list with O(1) time complexity.');
+              }}
+            >
+              Remove Head
+            </Button>
+          </>
+        );
       default:
         return null;
     }
@@ -1658,6 +1854,8 @@ class Graph {
             return [31, 32, 33, 34, 35, 36, 37, 38]; // insert operation
           case 'linkedList':
             return [25, 26, 27, 28, 29, 30]; // append operation
+          case 'doublyLinkedList':
+            return [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38]; // append operation
           case 'binaryTree':
             return [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]; // insert operation
           default:
@@ -1673,6 +1871,8 @@ class Graph {
             return [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100]; // extractMax operation
           case 'linkedList':
             return [35, 36, 37, 38, 39, 40, 41, 42, 43, 44]; // removeHead operation
+          case 'doublyLinkedList':
+            return [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]; // removeHead operation
           case 'binaryTree':
             return [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90]; // remove operation
           default:
@@ -1720,6 +1920,7 @@ class Graph {
               <MenuItem value="queue">Queue</MenuItem>
               <MenuItem value="heap">Heap</MenuItem>
               <MenuItem value="linkedList">Linked List</MenuItem>
+              <MenuItem value="doublyLinkedList">Doubly Linked List</MenuItem>
               <MenuItem value="binaryTree">Binary Tree</MenuItem>
               <MenuItem value="adjacencyList">Adjacency List</MenuItem>
               <MenuItem value="adjacencyMatrix">Adjacency Matrix</MenuItem>
